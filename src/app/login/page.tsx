@@ -108,7 +108,7 @@ export default function LoginPage() {
                 type="email"
                 {...register('email')}
                 placeholder="admin@example.com"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 transition-all font-sans text-sm"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 transition-all font-sans text-sm text-zinc-900"
               />
             </div>
             {errors.email && (

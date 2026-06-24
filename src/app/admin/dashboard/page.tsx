@@ -38,7 +38,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload';
 import { SortableList } from '@/components/admin/SortableList';
 
 const inputClass =
-  'w-full px-4 py-2.5 border border-gold-200/40 dark:border-zinc-700 rounded-xl bg-gray-50 dark:bg-zinc-900 focus:bg-white dark:focus:bg-zinc-800 focus:outline-none text-sm dark:text-zinc-100';
+  'w-full px-4 py-2.5 border border-gold-200/40 dark:border-zinc-700 rounded-xl bg-gray-50 dark:bg-zinc-900 focus:bg-white dark:focus:bg-zinc-800 focus:outline-none text-sm text-zinc-900 dark:text-zinc-100';
 const labelClass =
   'block text-[10px] font-sans font-bold tracking-widest text-[#5A5A5A] dark:text-zinc-400 uppercase mb-1.5';
 

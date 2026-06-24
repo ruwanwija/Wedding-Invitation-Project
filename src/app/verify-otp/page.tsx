@@ -234,7 +234,7 @@ function VerifyOtpContent() {
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 onPaste={handlePaste}
                 disabled={isLoading || !!successMsg}
-                className="w-8 h-10 sm:w-10 sm:h-12 text-base text-center font-bold font-mono rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 disabled:opacity-50 transition-all"
+                className="w-8 h-10 sm:w-10 sm:h-12 text-base text-center font-bold font-mono rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 disabled:opacity-50 transition-all text-zinc-900"
               />
             ))}
           </div>
