@@ -10,6 +10,7 @@ import {
   FamilyRow,
   GiftInfoRow,
   MusicSettingsRow,
+  Guest,
 } from './types';
 
 export { isSupabaseConfigured };
@@ -332,4 +333,31 @@ export async function deleteWish(id: string): Promise<void> {
   }
 
   throw new Error('Use admin API to delete wishes when Supabase is configured.');
+}
+
+export async function getGuestByToken(token: string): Promise<Guest | null> {
+  if (!isSupabaseConfigured && !isSupabaseAdminConfigured) {
+    const stored = getLocalStorage<Guest[]>('guests', []);
+    return stored.find((g) => g.invitation_token === token) ?? null;
+  }
+
+  const client = getReadClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('guests')
+      .select('*')
+      .eq('invitation_token', token)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Guest query error:', error.message);
+      return null;
+    }
+    return data as Guest | null;
+  } catch (e) {
+    console.error('Failed to get guest by token:', e);
+    return null;
+  }
 }

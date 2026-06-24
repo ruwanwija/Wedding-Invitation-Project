@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-import { WeddingSettings, TimelineEvent, ProgramItem, GalleryImage, GuestWish } from '@/lib/types';
+import { WeddingSettings, TimelineEvent, ProgramItem, GalleryImage, GuestWish, Guest } from '@/lib/types';
 import FallingPetals from './FallingPetals';
 import MusicPlayer from './MusicPlayer';
 import Countdown from './Countdown';
@@ -25,6 +25,7 @@ import Program from './Program';
 import Gallery from './Gallery';
 import Wishes from './Wishes';
 import Envelope from './Envelope';
+import RSVPForm from './RSVPForm';
 
 interface WeddingClientAppProps {
   initialSettings: WeddingSettings;
@@ -32,6 +33,7 @@ interface WeddingClientAppProps {
   initialProgram: ProgramItem[];
   initialGallery: GalleryImage[];
   initialWishes: GuestWish[];
+  guest?: Guest | null;
 }
 
 export default function WeddingClientApp({
@@ -39,12 +41,31 @@ export default function WeddingClientApp({
   initialTimeline,
   initialProgram,
   initialGallery,
-  initialWishes
+  initialWishes,
+  guest
 }: WeddingClientAppProps) {
   const [settings, setSettings] = useState<WeddingSettings>(initialSettings);
   const [isOpen, setIsOpen] = useState(false); // Mobile menu toggle
   const [scrolled, setScrolled] = useState(false);
   const [isOpenedInvitation, setIsOpenedInvitation] = useState(false); // Splash overlay state
+  const [activeGuest, setActiveGuest] = useState<Guest | null>(guest || null);
+
+  useEffect(() => {
+    if (guest) {
+      localStorage.setItem('saved_guest', JSON.stringify(guest));
+      setActiveGuest(guest);
+    } else {
+      const saved = localStorage.getItem('saved_guest');
+      if (saved) {
+        try {
+          setActiveGuest(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse saved guest:', e);
+        }
+      }
+    }
+  }, [guest]);
+
 
   // Refs for smooth scrolling
   const heroRef = useRef<HTMLDivElement>(null);
@@ -122,6 +143,8 @@ export default function WeddingClientApp({
           <Envelope
             brideName={settings.brideName}
             groomName={settings.groomName}
+            guestName={activeGuest?.guest_name}
+            invitationType={activeGuest?.invitation_type}
             onOpenComplete={() => {
               setIsOpenedInvitation(true);
               setTimeout(() => {
@@ -182,8 +205,30 @@ export default function WeddingClientApp({
             {settings.brideName} <span className="text-white font-serif italic text-3xl sm:text-5xl">&amp;</span> {settings.groomName}
           </h1>
 
+          {activeGuest && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="mb-6 p-4 rounded-2xl bg-[#D4AF37]/5 border border-[#D4AF37]/20 max-w-md mx-auto"
+            >
+              <span className="font-serif italic text-gold-300 text-xs sm:text-sm tracking-widest block uppercase mb-1">
+                Warm Welcome
+              </span>
+              <h4 className="font-serif text-white font-semibold text-lg sm:text-xl tracking-wide">
+                {activeGuest.invitation_type === 'spouse'
+                  ? `Dear ${activeGuest.guest_name} & Partner`
+                  : activeGuest.invitation_type === 'family'
+                  ? `Dear ${activeGuest.guest_name} & Family`
+                  : `Dear ${activeGuest.guest_name}`}
+              </h4>
+            </motion.div>
+          )}
+
           <p className="text-white/90 font-serif text-sm sm:text-base md:text-lg max-w-xl mx-auto italic leading-relaxed mb-8">
-            &ldquo;Together with our families, we warmly invite you to celebrate our wedding and share in our happiness.&rdquo;
+            {activeGuest?.invitation_type === 'family'
+              ? `Together with our families, we warmly invite you to celebrate our wedding and share this special day with us.`
+              : `Together with our families, we warmly invite you to celebrate our wedding and share in our happiness.`}
           </p>
 
           {/* Date & Time info */}
@@ -580,6 +625,17 @@ export default function WeddingClientApp({
           </div>
         </section>
       )}
+
+      {/* ==========================================
+          SECTION 10.5: RSVP FORM (Interactive Confirmation)
+         ========================================== */}
+      <RSVPForm
+        guest={activeGuest}
+        onRsvpSubmit={(updatedGuest) => {
+          setActiveGuest(updatedGuest);
+          localStorage.setItem('saved_guest', JSON.stringify(updatedGuest));
+        }}
+      />
 
       {/* ==========================================
           SECTION 11: FOOTER

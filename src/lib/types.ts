@@ -143,7 +143,8 @@ export type AdminTab =
   | 'gallery'
   | 'wishes'
   | 'gifts'
-  | 'music';
+  | 'music'
+  | 'guests';
 
 export type StorageBucket =
   | 'bride-groom-images'
@@ -151,3 +152,37 @@ export type StorageBucket =
   | 'timeline-images'
   | 'music-tracks'
   | 'qr-codes';
+
+export interface Guest {
+  id: string;
+  guest_name: string;
+  whatsapp_number: string;
+  invitation_type: 'individual' | 'spouse' | 'family';
+  invitation_token: string;
+  invitation_link: string;
+  rsvp_status?: 'attending' | 'declined' | null;
+  rsvp_guests_count?: number;
+  rsvp_message?: string | null;
+  rsvp_submitted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvitationVisit {
+  id: string;
+  guest_id: string;
+  visited_at: string;
+  device_type: string;
+  browser: string;
+  ip_address: string;
+}
+
+export interface GuestAnalytics {
+  totalGuests: number;
+  totalLinks: number;
+  invitationsViewed: number;
+  pendingViews: number;
+  totalAttendingGuests: number;
+  totalDeclined: number;
+  pendingRsvps: number;
+}

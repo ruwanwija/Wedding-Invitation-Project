@@ -9,9 +9,11 @@ interface EnvelopeProps {
   brideName: string;
   groomName: string;
   onOpenComplete: () => void;
+  guestName?: string;
+  invitationType?: 'individual' | 'spouse' | 'family';
 }
 
-export default function Envelope({ brideName, groomName, onOpenComplete }: EnvelopeProps) {
+export default function Envelope({ brideName, groomName, onOpenComplete, guestName, invitationType }: EnvelopeProps) {
   const [dragged, setDragged] = useState(false);
   const [isOpenStarted, setIsOpenStarted] = useState(false);
   const [isFlapOpened, setIsFlapOpened] = useState(false);
@@ -106,13 +108,35 @@ export default function Envelope({ brideName, groomName, onOpenComplete }: Envel
               <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl text-gold-400 tracking-widest font-semibold mt-1">
                 {brideName} & {groomName}
               </h2>
-              <div className="flex justify-center items-center gap-3 mt-4">
-                <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#D4AF37]/45" />
-                <span className="font-serif italic text-[#F3ECD8]/70 text-xs sm:text-sm tracking-wider">
-                  Invite You to Celebrate Their Union
-                </span>
-                <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#D4AF37]/45" />
-              </div>
+              {guestName ? (
+                <>
+                  <span className="font-serif italic text-gold-200/50 tracking-[0.2em] text-xs sm:text-sm uppercase block mt-3">
+                    joyfully invite
+                  </span>
+                  <h3 className="font-serif text-xl sm:text-2xl lg:text-3xl text-white tracking-wider font-semibold mt-2 px-4 italic drop-shadow-md">
+                    {invitationType === 'spouse'
+                      ? `${guestName} & Partner`
+                      : invitationType === 'family'
+                      ? `${guestName} & Family`
+                      : guestName}
+                  </h3>
+                  <div className="flex justify-center items-center gap-3 mt-4">
+                    <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#D4AF37]/45" />
+                    <span className="font-serif italic text-[#F3ECD8]/70 text-xs sm:text-sm tracking-wider">
+                      to celebrate our wedding
+                    </span>
+                    <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#D4AF37]/45" />
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-center items-center gap-3 mt-4">
+                  <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#D4AF37]/45" />
+                  <span className="font-serif italic text-[#F3ECD8]/70 text-xs sm:text-sm tracking-wider">
+                    Invite You to Celebrate Their Union
+                  </span>
+                  <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#D4AF37]/45" />
+                </div>
+              )}
             </motion.div>
 
             {/* 3D Envelope Container */}
@@ -145,16 +169,26 @@ export default function Envelope({ brideName, groomName, onOpenComplete }: Envel
                 <div className="absolute inset-2.5 sm:inset-3 border border-[#D4AF37]/10 rounded-md pointer-events-none" />
 
                 <span className="font-serif italic text-gold-300/80 text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-2 block">
-                  The Honor of Your Presence
+                  {guestName ? 'Specially Prepared For' : 'The Honor of Your Presence'}
                 </span>
                 
-                {/* Monogram Crest */}
-                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center my-3 relative">
-                  <div className="absolute inset-0.5 rounded-full border border-dashed border-[#D4AF37]/15" />
-                  <span className="font-display text-sm sm:text-lg text-gold-400 font-bold tracking-widest">{monogram}</span>
-                </div>
+                {guestName ? (
+                  <h4 className="font-serif text-gold-200 text-sm sm:text-base font-semibold tracking-wide my-1">
+                    {invitationType === 'spouse'
+                      ? `${guestName} & Partner`
+                      : invitationType === 'family'
+                      ? `${guestName} & Family`
+                      : guestName}
+                  </h4>
+                ) : (
+                  /* Monogram Crest */
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center my-3 relative">
+                    <div className="absolute inset-0.5 rounded-full border border-dashed border-[#D4AF37]/15" />
+                    <span className="font-display text-sm sm:text-lg text-gold-400 font-bold tracking-widest">{monogram}</span>
+                  </div>
+                )}
 
-                <h3 className="font-display text-lg sm:text-2xl text-white font-bold tracking-widest uppercase my-1">
+                <h3 className="font-display text-lg sm:text-2xl text-white font-bold tracking-widest uppercase my-1 mt-2">
                   Save The Date
                 </h3>
                 

@@ -268,3 +268,53 @@ create table if not exists public.admin_users (
 
 -- Enable RLS
 alter table public.admin_users enable row level security;
+
+-- -------------------------------------------------------------------------
+-- Guest Management System Tables
+-- -------------------------------------------------------------------------
+
+create table if not exists public.guests (
+  id uuid default gen_random_uuid() primary key,
+  guest_name text not null,
+  whatsapp_number text not null unique,
+  invitation_type text not null check (invitation_type in ('individual', 'spouse', 'family')),
+  invitation_token text not null unique,
+  invitation_link text not null,
+  created_at timestamptz default timezone('utc'::text, now()) not null,
+  updated_at timestamptz default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS
+alter table public.guests enable row level security;
+
+-- Policies
+create policy "Public read guests" on public.guests for select using (true);
+create policy "Admin insert guests" on public.guests for insert with check (auth.role() = 'authenticated');
+create policy "Admin update guests" on public.guests for update using (auth.role() = 'authenticated');
+create policy "Admin delete guests" on public.guests for delete using (auth.role() = 'authenticated');
+
+create table if not exists public.invitation_visits (
+  id uuid default gen_random_uuid() primary key,
+  guest_id uuid references public.guests(id) on delete cascade not null,
+  visited_at timestamptz default timezone('utc'::text, now()) not null,
+  device_type text not null,
+  browser text not null,
+  ip_address text not null
+);
+
+-- Enable RLS
+alter table public.invitation_visits enable row level security;
+
+-- Policies
+create policy "Public insert visits" on public.invitation_visits for insert with check (true);
+create policy "Admin read visits" on public.invitation_visits for select using (auth.role() = 'authenticated');
+
+-- -------------------------------------------------------------------------
+-- RSVP Confirmation Extensions
+-- -------------------------------------------------------------------------
+alter table public.guests
+add column if not exists rsvp_status text check (rsvp_status in ('attending', 'declined')),
+add column if not exists rsvp_guests_count integer default 0,
+add column if not exists rsvp_message text,
+add column if not exists rsvp_submitted_at timestamptz;
+

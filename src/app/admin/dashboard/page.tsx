@@ -15,6 +15,15 @@ import {
   MessageSquare,
   Sparkles,
   Home,
+  Users,
+  Copy,
+  Trash2,
+  Edit2,
+  ExternalLink,
+  Search,
+  Check,
+  X,
+  FileText,
 } from 'lucide-react';
 
 import { isSupabaseConfigured, createSupabaseBrowserClient } from '@/lib/supabaseClient';
@@ -30,6 +39,8 @@ import {
   MusicSettingsRow,
   GiftInfoRow,
   AdminTab,
+  Guest,
+  GuestAnalytics,
 } from '@/lib/types';
 import { Toast } from '@/components/admin/Toast';
 import { ThemeToggle } from '@/components/admin/ThemeToggle';
@@ -63,6 +74,24 @@ export default function AdminDashboard() {
   const [newProgram, setNewProgram] = useState({ time: '', event_title: '', description: '' });
   const [newGallery, setNewGallery] = useState({ image_url: '', caption: '' });
 
+  const [guests, setGuests] = useState<(Guest & { invitation_visits?: { id: string }[] })[]>([]);
+  const [guestAnalytics, setGuestAnalytics] = useState<GuestAnalytics>({
+    totalGuests: 0,
+    totalLinks: 0,
+    invitationsViewed: 0,
+    pendingViews: 0,
+    totalAttendingGuests: 0,
+    totalDeclined: 0,
+    pendingRsvps: 0,
+  });
+  const [newGuest, setNewGuest] = useState({ guest_name: '', whatsapp_number: '', invitation_type: 'individual' });
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [bulkInput, setBulkInput] = useState('');
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [rsvpFilter, setRsvpFilter] = useState<'all' | 'attending' | 'declined' | 'pending'>('all');
+
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
   }, []);
@@ -80,6 +109,7 @@ export default function AdminDashboard() {
         adminApi.getMusic(),
         adminApi.getGift(),
       ]);
+
       setWeddingInfo(
         (info as WeddingInfoRow) ?? {
           id: '',
@@ -117,6 +147,52 @@ export default function AdminDashboard() {
           is_enabled: true,
         }
       );
+
+      // Load guests
+      let guestList: any[] = [];
+      let analytics: GuestAnalytics = {
+        totalGuests: 0,
+        totalLinks: 0,
+        invitationsViewed: 0,
+        pendingViews: 0,
+        totalAttendingGuests: 0,
+        totalDeclined: 0,
+        pendingRsvps: 0,
+      };
+      if (!isSupabaseConfigured) {
+        const stored = localStorage.getItem('guests');
+        guestList = stored ? JSON.parse(stored) : [];
+        let totalAttendingGuests = 0;
+        let totalDeclined = 0;
+        let pendingRsvps = 0;
+        guestList.forEach((g) => {
+          if (g.rsvp_status === 'attending') {
+            totalAttendingGuests += g.rsvp_guests_count || 0;
+          } else if (g.rsvp_status === 'declined') {
+            totalDeclined++;
+          } else {
+            pendingRsvps++;
+          }
+        });
+        analytics = {
+          totalGuests: guestList.length,
+          totalLinks: guestList.length,
+          invitationsViewed: 0,
+          pendingViews: guestList.length,
+          totalAttendingGuests,
+          totalDeclined,
+          pendingRsvps,
+        };
+      } else {
+        try {
+          guestList = await adminApi.getGuests();
+          analytics = await adminApi.getGuestAnalytics();
+        } catch (err) {
+          console.warn('Failed to load guests from API, using empty list:', err);
+        }
+      }
+      setGuests(guestList);
+      setGuestAnalytics(analytics);
     } catch (err) {
       console.error(err);
       showToast('Failed to load dashboard data', 'error');
@@ -371,6 +447,402 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAddGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGuest.guest_name || !newGuest.whatsapp_number) return;
+    setSaveLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        const token = Math.random().toString(36).substring(2, 12);
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const createdGuest: Guest = {
+          id: Math.random().toString(36).substring(2, 9),
+          guest_name: newGuest.guest_name.trim(),
+          whatsapp_number: newGuest.whatsapp_number.trim(),
+          invitation_type: newGuest.invitation_type as any,
+          invitation_token: token,
+          invitation_link: `${origin}/invitation/${token}`,
+          rsvp_status: null,
+          rsvp_guests_count: 0,
+          rsvp_message: null,
+          rsvp_submitted_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        const currentGuests = [...guests];
+        if (currentGuests.some((g) => g.whatsapp_number === createdGuest.whatsapp_number)) {
+          showToast('A guest with this WhatsApp number is already registered.', 'error');
+          return;
+        }
+        currentGuests.unshift(createdGuest);
+        localStorage.setItem('guests', JSON.stringify(currentGuests));
+        setGuests(currentGuests);
+        let totalAttendingGuests = 0;
+        let totalDeclined = 0;
+        let pendingRsvps = 0;
+        currentGuests.forEach((g) => {
+          if (g.rsvp_status === 'attending') {
+            totalAttendingGuests += g.rsvp_guests_count || 0;
+          } else if (g.rsvp_status === 'declined') {
+            totalDeclined++;
+          } else {
+            pendingRsvps++;
+          }
+        });
+        setGuestAnalytics((prev) => ({
+          ...prev,
+          totalGuests: currentGuests.length,
+          totalLinks: currentGuests.length,
+          pendingViews: currentGuests.length,
+          totalAttendingGuests,
+          totalDeclined,
+          pendingRsvps,
+        }));
+        setNewGuest({ guest_name: '', whatsapp_number: '', invitation_type: 'individual' });
+        showToast('Guest added successfully', 'success');
+      } else {
+        const created = await adminApi.createGuest(newGuest);
+        setGuests((prev) => [created, ...prev]);
+        setNewGuest({ guest_name: '', whatsapp_number: '', invitation_type: 'individual' });
+        showToast('Guest added successfully', 'success');
+        const analytics = await adminApi.getGuestAnalytics();
+        setGuestAnalytics(analytics);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add guest', 'error');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleUpdateGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGuestId || !newGuest.guest_name || !newGuest.whatsapp_number) return;
+    setSaveLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        const currentGuests = [...guests];
+        const index = currentGuests.findIndex((g) => g.id === editingGuestId);
+        if (index === -1) return;
+
+        if (
+          currentGuests.some(
+            (g, i) => i !== index && g.whatsapp_number === newGuest.whatsapp_number.trim()
+          )
+        ) {
+          showToast('A guest with this WhatsApp number is already registered.', 'error');
+          return;
+        }
+
+        currentGuests[index] = {
+          ...currentGuests[index],
+          guest_name: newGuest.guest_name.trim(),
+          whatsapp_number: newGuest.whatsapp_number.trim(),
+          invitation_type: newGuest.invitation_type as any,
+          updated_at: new Date().toISOString(),
+        };
+
+        localStorage.setItem('guests', JSON.stringify(currentGuests));
+        setGuests(currentGuests);
+        setEditingGuestId(null);
+        setNewGuest({ guest_name: '', whatsapp_number: '', invitation_type: 'individual' });
+        showToast('Guest updated successfully', 'success');
+      } else {
+        const updated = await adminApi.updateGuest(editingGuestId, newGuest);
+        setGuests((prev) => prev.map((g) => (g.id === editingGuestId ? updated : g)));
+        setEditingGuestId(null);
+        setNewGuest({ guest_name: '', whatsapp_number: '', invitation_type: 'individual' });
+        showToast('Guest updated successfully', 'success');
+        const analytics = await adminApi.getGuestAnalytics();
+        setGuestAnalytics(analytics);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update guest', 'error');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleDeleteGuest = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this guest?')) return;
+    try {
+      if (!isSupabaseConfigured) {
+        const currentGuests = guests.filter((g) => g.id !== id);
+        localStorage.setItem('guests', JSON.stringify(currentGuests));
+        setGuests(currentGuests);
+        let totalAttendingGuests = 0;
+        let totalDeclined = 0;
+        let pendingRsvps = 0;
+        currentGuests.forEach((g) => {
+          if (g.rsvp_status === 'attending') {
+            totalAttendingGuests += g.rsvp_guests_count || 0;
+          } else if (g.rsvp_status === 'declined') {
+            totalDeclined++;
+          } else {
+            pendingRsvps++;
+          }
+        });
+        setGuestAnalytics((prev) => ({
+          ...prev,
+          totalGuests: currentGuests.length,
+          totalLinks: currentGuests.length,
+          pendingViews: currentGuests.length,
+          totalAttendingGuests,
+          totalDeclined,
+          pendingRsvps,
+        }));
+        showToast('Guest deleted successfully', 'success');
+      } else {
+        await adminApi.deleteGuest(id);
+        setGuests((prev) => prev.filter((g) => g.id !== id));
+        showToast('Guest deleted successfully', 'success');
+        const analytics = await adminApi.getGuestAnalytics();
+        setGuestAnalytics(analytics);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete guest', 'error');
+    }
+  };
+
+  const handleBulkImport = async () => {
+    if (!bulkInput.trim()) return;
+    setSaveLoading(true);
+    try {
+      const lines = bulkInput.split('\n');
+      const parsedGuests: { guest_name: string; whatsapp_number: string; invitation_type: string }[] = [];
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+        const guest_name = parts[0]?.trim() || '';
+        const whatsapp_number = parts[1]?.trim() || '';
+        let invitation_type = parts[2]?.trim().toLowerCase() || 'individual';
+
+        if (!['individual', 'spouse', 'family'].includes(invitation_type)) {
+          invitation_type = 'individual';
+        }
+
+        if (guest_name && whatsapp_number) {
+          parsedGuests.push({ guest_name, whatsapp_number, invitation_type });
+        }
+      }
+
+      if (parsedGuests.length === 0) {
+        showToast('No valid guest data found. Format: Name, WhatsApp, Type', 'error');
+        return;
+      }
+
+      if (!isSupabaseConfigured) {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const currentGuests = [...guests];
+        let imported = 0;
+        let duplicateInDb = 0;
+        let duplicateInPayload = 0;
+        const processedNumbers = new Set<string>();
+
+        for (const item of parsedGuests) {
+          if (processedNumbers.has(item.whatsapp_number)) {
+            duplicateInPayload++;
+            continue;
+          }
+          if (currentGuests.some((g) => g.whatsapp_number === item.whatsapp_number)) {
+            duplicateInDb++;
+            continue;
+          }
+
+          processedNumbers.add(item.whatsapp_number);
+          const token = Math.random().toString(36).substring(2, 12);
+          currentGuests.unshift({
+            id: Math.random().toString(36).substring(2, 9),
+            guest_name: item.guest_name,
+            whatsapp_number: item.whatsapp_number,
+            invitation_type: item.invitation_type as any,
+            invitation_token: token,
+            invitation_link: `${origin}/invitation/${token}`,
+            rsvp_status: null,
+            rsvp_guests_count: 0,
+            rsvp_message: null,
+            rsvp_submitted_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+          imported++;
+        }
+
+        localStorage.setItem('guests', JSON.stringify(currentGuests));
+        setGuests(currentGuests);
+        let totalAttendingGuests = 0;
+        let totalDeclined = 0;
+        let pendingRsvps = 0;
+        currentGuests.forEach((g) => {
+          if (g.rsvp_status === 'attending') {
+            totalAttendingGuests += g.rsvp_guests_count || 0;
+          } else if (g.rsvp_status === 'declined') {
+            totalDeclined++;
+          } else {
+            pendingRsvps++;
+          }
+        });
+        setGuestAnalytics((prev) => ({
+          ...prev,
+          totalGuests: currentGuests.length,
+          totalLinks: currentGuests.length,
+          pendingViews: currentGuests.length,
+          totalAttendingGuests,
+          totalDeclined,
+          pendingRsvps,
+        }));
+
+        showToast(
+          `Imported ${imported} guests. Skipped ${duplicateInDb + duplicateInPayload} duplicates.`,
+          'success'
+        );
+        setBulkInput('');
+        setShowBulkModal(false);
+      } else {
+        const res = await adminApi.importBulkGuests(parsedGuests);
+        showToast(res.message, 'success');
+        setBulkInput('');
+        setShowBulkModal(false);
+        const [list, analytics] = await Promise.all([
+          adminApi.getGuests(),
+          adminApi.getGuestAnalytics(),
+        ]);
+        setGuests(list);
+        setGuestAnalytics(analytics);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to import guests', 'error');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleSendWhatsApp = (guest: Guest) => {
+    const groomName = weddingInfo?.groom_name || 'Githmie';
+    const brideName = weddingInfo?.bride_name || 'Ruwan';
+    const weddingDate = weddingInfo?.wedding_date || '2026-09-20';
+    const venueName = weddingInfo?.venue_name || '';
+
+    // Emoji via pre-encoded UTF-8 bytes — 100% immune to file encoding or compiler issues
+    // Each string is the correct UTF-8 bytes of the emoji, percent-encoded as plain ASCII
+    const em = (s: string) => decodeURIComponent(s);
+    const e_sparkles = em('%E2%9C%A8');                // ✨
+    const e_ring     = em('%F0%9F%92%8D');             // 💍
+    const e_bride    = em('%F0%9F%91%B0');             // 👰
+    const e_groom    = em('%F0%9F%A4%B5');             // 🤵
+    const e_calendar = em('%F0%9F%93%85');             // 📅
+    const e_pin      = em('%F0%9F%93%8D');             // 📍
+    const e_link     = em('%F0%9F%94%97');             // 🔗
+    const e_heart    = em('%F0%9F%92%9B');             // 💛
+    const e_couple   = em('%F0%9F%92%91');             // 💑
+    const e_family   = em('%F0%9F%91%A8%E2%80%8D%F0%9F%91%A9%E2%80%8D%F0%9F%91%A7%E2%80%8D%F0%9F%91%A6'); // 👨‍👩‍👧‍👦
+
+    let salutation = `Dear ${guest.guest_name}`;
+    let guestNote = '';
+    if (guest.invitation_type === 'spouse') {
+      salutation = `Dear ${guest.guest_name} & Your Beloved Partner`;
+      guestNote = `\nThis invitation is extended warmly to both of you. ${e_couple}`;
+    } else if (guest.invitation_type === 'family') {
+      salutation = `Dear ${guest.guest_name} & Your Wonderful Family`;
+      guestNote = `\nWe warmly welcome you and your entire family to share in this joyful occasion. ${e_family}`;
+    }
+
+    // Format date nicely
+    let formattedDate = weddingDate;
+    try {
+      formattedDate = new Date(weddingDate + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
+    } catch (_) {}
+
+    const lines: string[] = [
+      `${e_sparkles} *A Joyful Wedding Invitation* ${e_sparkles}`,
+      ``,
+      `${salutation},${guestNote}`,
+      ``,
+      `With hearts full of love and excitement, we cordially invite you to witness and celebrate the beginning of our beautiful journey together as we say *"I Do"*. ${e_ring}`,
+      ``,
+      `${e_bride}${e_groom} *${brideName} & ${groomName}*`,
+      `are getting married!`,
+      ``,
+      `${e_calendar} *Date:* ${formattedDate}`,
+    ];
+    if (venueName) lines.push(`${e_pin} *Venue:* ${venueName}`);
+    lines.push(
+      ``,
+      `We have prepared a beautiful personalized wedding invitation just for you. Please open your unique link to view all the details, program, and to RSVP:`,
+      ``,
+      `${e_link} ${guest.invitation_link}`,
+      ``,
+      `Your presence would mean the world to us. We truly hope to celebrate this magical day surrounded by the people we cherish most.`,
+      ``,
+      `With all our love,`,
+      `*${brideName} & ${groomName}* ${e_heart}`
+    );
+
+    const message = lines.join('\n');
+
+    // Normalize phone number to international format (no + sign, digits only)
+    // Local Sri Lankan format 07XXXXXXXX -> 947XXXXXXXX
+    let cleanedPhone = guest.whatsapp_number.replace(/[^\d]/g, '');
+    if (cleanedPhone.startsWith('0')) {
+      cleanedPhone = '94' + cleanedPhone.slice(1);
+    }
+
+    const url = `https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+
+
+  const handleCopyLink = (guest: Guest) => {
+    navigator.clipboard.writeText(guest.invitation_link);
+    setCopiedId(guest.id);
+    setTimeout(() => setCopiedId(null), 2000);
+    showToast('Link copied to clipboard', 'success');
+  };
+
+  const handleCopyAllLinks = () => {
+    const text = filteredGuests.map((g) => `${g.guest_name}: ${g.invitation_link}`).join('\n');
+    navigator.clipboard.writeText(text);
+    showToast('All invitation links copied', 'success');
+  };
+
+  const handleExportCSV = () => {
+    const header = 'Name,WhatsApp,Type,Link,Status\n';
+    const rows = filteredGuests
+      .map((g) => {
+        const hasVisited = g.invitation_visits && g.invitation_visits.length > 0;
+        return `"${g.guest_name.replace(/"/g, '""')}","${g.whatsapp_number}","${g.invitation_type}","${g.invitation_link}","${hasVisited ? 'Viewed' : 'Pending'}"`;
+      })
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `guests_invitations_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('CSV export downloaded', 'success');
+  };
+
+  const filteredGuests = guests.filter(
+    (g) => {
+      const matchesSearch =
+        g.guest_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        g.whatsapp_number.includes(searchQuery);
+      if (!matchesSearch) return false;
+
+      if (rsvpFilter === 'attending') return g.rsvp_status === 'attending';
+      if (rsvpFilter === 'declined') return g.rsvp_status === 'declined';
+      if (rsvpFilter === 'pending') return !g.rsvp_status;
+      return true;
+    }
+  );
+
+
   if (loading) {
     return <DashboardSkeleton />;
   }
@@ -392,6 +864,7 @@ export default function AdminDashboard() {
     { id: 'wishes', label: 'Wishes Moderator', icon: <MessageSquare className="w-4 h-4" />, badge: wishes.length },
     { id: 'music', label: 'Music', icon: <Music className="w-4 h-4" /> },
     { id: 'gifts', label: 'Gifts & Registry', icon: <Gift className="w-4 h-4" /> },
+    { id: 'guests', label: '📋 Guest Management', icon: <Users className="w-4 h-4" /> },
   ];
 
   return (
@@ -898,6 +1371,383 @@ export default function AdminDashboard() {
                 onChange={(url) => setGift({ ...gift, qr_code_url: url })}
               />
             </form>
+          )}
+
+          {activeTab === 'guests' && (
+            <div className="space-y-6 animate-fadeIn">
+              <PanelHeader title="Guest Invitation Management" subtitle="Manage guests, invitation types, and track RSVP confirmations" showSave={false} />
+              
+              {/* Analytics Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Row 1: RSVPs */}
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Total Guests</span>
+                  <span className="text-2xl font-display font-semibold text-zinc-800 dark:text-zinc-100 mt-2">{guestAnalytics.totalGuests}</span>
+                </div>
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Confirmed Attending</span>
+                  <span className="text-2xl font-display font-semibold text-gold-600 dark:text-gold-400 mt-2">
+                    {guestAnalytics.totalAttendingGuests || 0}
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 font-normal ml-1"> head-count</span>
+                  </span>
+                </div>
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Invitations Declined</span>
+                  <span className="text-2xl font-display font-semibold text-red-500 dark:text-red-400 mt-2">{guestAnalytics.totalDeclined || 0}</span>
+                </div>
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Pending RSVPs</span>
+                  <span className="text-2xl font-display font-semibold text-amber-500 dark:text-amber-400 mt-2">{guestAnalytics.pendingRsvps || 0}</span>
+                </div>
+
+                {/* Row 2: Link Views */}
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Invitation Links</span>
+                  <span className="text-2xl font-display font-semibold text-zinc-800 dark:text-zinc-100 mt-2">{guestAnalytics.totalLinks}</span>
+                </div>
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Links Viewed</span>
+                  <span className="text-2xl font-display font-semibold text-emerald-600 dark:text-emerald-400 mt-2">
+                    {guestAnalytics.invitationsViewed} 
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 font-normal ml-1.5">
+                      ({guestAnalytics.totalGuests > 0 ? Math.round((guestAnalytics.invitationsViewed / guestAnalytics.totalGuests) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-gold-200/20 dark:border-zinc-800 shadow-sm flex flex-col justify-between md:col-span-2">
+                  <span className="text-[10px] font-sans font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Pending Link Views</span>
+                  <span className="text-2xl font-display font-semibold text-amber-600 dark:text-amber-400 mt-2">{guestAnalytics.pendingViews}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                
+                {/* Form to Add / Edit Guest */}
+                <div className="lg:col-span-1 p-5 rounded-2xl bg-gold-50/30 dark:bg-zinc-800/30 border border-gold-200/20 dark:border-zinc-800 space-y-4">
+                  <h4 className="font-serif font-bold text-sm text-gold-700 dark:text-gold-400">
+                    {editingGuestId ? 'Edit Invitation' : 'Create Invitation'}
+                  </h4>
+                  <form onSubmit={editingGuestId ? handleUpdateGuest : handleAddGuest} className="space-y-4">
+                    <Field label="Guest Name">
+                      <input
+                        placeholder="e.g. Mr. & Mrs. John Smith"
+                        className={inputClass}
+                        value={newGuest.guest_name}
+                        onChange={(e) => setNewGuest({ ...newGuest, guest_name: e.target.value })}
+                        required
+                      />
+                    </Field>
+                    <Field label="WhatsApp Number">
+                      <input
+                        placeholder="e.g. +94771234567"
+                        className={inputClass}
+                        value={newGuest.whatsapp_number}
+                        onChange={(e) => setNewGuest({ ...newGuest, whatsapp_number: e.target.value })}
+                        required
+                      />
+                      {newGuest.whatsapp_number && newGuest.whatsapp_number.replace(/[^\d]/g, '').startsWith('0') ? (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-sans">
+                          ⚠️ Local format detected — will auto-convert to international (e.g. 0714885764 → +94714885764)
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 font-sans">
+                          Use international format: +94XXXXXXXXX (Sri Lanka) or +1XXXXXXXXXX (USA)
+                        </p>
+                      )}
+                    </Field>
+
+                    <Field label="Invitation Type">
+                      <select
+                        className={inputClass}
+                        value={newGuest.invitation_type}
+                        onChange={(e) => setNewGuest({ ...newGuest, invitation_type: e.target.value })}
+                      >
+                        <option value="individual">Individual Guest</option>
+                        <option value="spouse">Guest + Spouse/Partner</option>
+                        <option value="family">Guest + Family</option>
+                      </select>
+                    </Field>
+                    <div className="flex gap-2.5 pt-2">
+                      <button
+                        type="submit"
+                        disabled={saveLoading}
+                        className="flex-1 py-2 px-4 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-xs font-bold tracking-widest uppercase cursor-pointer disabled:opacity-50 transition-colors"
+                      >
+                        {editingGuestId ? 'Update' : 'Generate Link'}
+                      </button>
+                      {editingGuestId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingGuestId(null);
+                            setNewGuest({ guest_name: '', whatsapp_number: '', invitation_type: 'individual' });
+                          }}
+                          className="py-2 px-4 rounded-xl border border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 text-xs font-bold tracking-widest uppercase hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                {/* Main Guest Table & Search */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="flex items-center gap-3 justify-between">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search guests..."
+                        className={`${inputClass} pl-10`}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBulkModal(true)}
+                      className="py-2 px-4 rounded-xl border border-gold-200 dark:border-zinc-800 text-gold-600 dark:text-gold-400 bg-gold-50/20 hover:bg-gold-50/50 dark:hover:bg-zinc-800/50 text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                    >
+                      Bulk Import (CSV)
+                    </button>
+                  </div>
+
+                  {/* RSVP Filter buttons */}
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <button
+                      onClick={() => setRsvpFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg border font-semibold transition-colors cursor-pointer ${
+                        rsvpFilter === 'all'
+                          ? 'bg-gold-500 border-gold-500 text-white shadow-sm font-bold'
+                          : 'border-zinc-200 dark:border-zinc-805 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      All ({guests.length})
+                    </button>
+                    <button
+                      onClick={() => setRsvpFilter('attending')}
+                      className={`px-3 py-1.5 rounded-lg border font-semibold transition-colors cursor-pointer ${
+                        rsvpFilter === 'attending'
+                          ? 'bg-gold-500 border-gold-500 text-white shadow-sm font-bold'
+                          : 'border-zinc-200 dark:border-zinc-805 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      Attending ({guests.filter((g) => g.rsvp_status === 'attending').length})
+                    </button>
+                    <button
+                      onClick={() => setRsvpFilter('declined')}
+                      className={`px-3 py-1.5 rounded-lg border font-semibold transition-colors cursor-pointer ${
+                        rsvpFilter === 'declined'
+                          ? 'bg-gold-500 border-gold-500 text-white shadow-sm font-bold'
+                          : 'border-zinc-200 dark:border-zinc-805 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      Declined ({guests.filter((g) => g.rsvp_status === 'declined').length})
+                    </button>
+                    <button
+                      onClick={() => setRsvpFilter('pending')}
+                      className={`px-3 py-1.5 rounded-lg border font-semibold transition-colors cursor-pointer ${
+                        rsvpFilter === 'pending'
+                          ? 'bg-gold-500 border-gold-500 text-white shadow-sm font-bold'
+                          : 'border-zinc-200 dark:border-zinc-850 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      Pending RSVP ({guests.filter((g) => !g.rsvp_status).length})
+                    </button>
+                  </div>
+
+                  {/* Bulk Action Controls */}
+                  {guests.length > 0 && (
+                    <div className="flex items-center gap-4 pb-2 text-xs font-semibold">
+                      <button
+                        onClick={handleCopyAllLinks}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-gold-600 transition-colors cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy All Links
+                      </button>
+                      <span className="text-zinc-300">|</span>
+                      <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-gold-600 transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Export CSV
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Table */}
+                  <div className="overflow-x-auto border border-gray-100 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900/35">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50/80 dark:bg-zinc-900/80 border-b border-gray-100 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 text-[10px] font-sans font-bold tracking-widest uppercase">
+                          <th className="p-4">Guest Details</th>
+                          <th className="p-4">WhatsApp</th>
+                          <th className="p-4 text-center">Link status</th>
+                          <th className="p-4 text-center">RSVP</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/50">
+                        {filteredGuests.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="p-8 text-center text-gray-400 dark:text-zinc-500 italic font-serif">
+                              No guests found.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredGuests.map((guest) => {
+                            const hasVisited = guest.invitation_visits && guest.invitation_visits.length > 0;
+                            return (
+                              <tr key={guest.id} className="hover:bg-gray-50/40 dark:hover:bg-zinc-900/40 transition-colors group">
+                                <td className="p-4">
+                                  <div className="font-serif font-bold text-zinc-800 dark:text-zinc-100 text-sm">
+                                    {guest.guest_name}
+                                  </div>
+                                  <span className={`inline-block px-2 py-0.5 mt-1 rounded text-[9px] uppercase font-sans font-bold tracking-wider ${
+                                    guest.invitation_type === 'family'
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40'
+                                      : guest.invitation_type === 'spouse'
+                                      ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40'
+                                      : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40'
+                                  }`}>
+                                    {guest.invitation_type}
+                                  </span>
+                                  {guest.rsvp_message && (
+                                    <div className="text-[11px] text-[#5A5A5A] dark:text-zinc-400 italic mt-1.5 font-sans border-l-2 border-gold-400/30 pl-2 max-w-[220px] truncate" title={guest.rsvp_message}>
+                                      &ldquo;{guest.rsvp_message}&rdquo;
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-4 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                                  {guest.whatsapp_number}
+                                </td>
+                                <td className="p-4 text-center">
+                                  <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-sans font-bold uppercase tracking-wider ${
+                                    hasVisited
+                                      ? 'bg-green-50/70 dark:bg-green-950/30 text-green-700 dark:text-green-400'
+                                      : 'bg-zinc-50 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400'
+                                  }`}>
+                                    {hasVisited ? 'Opened' : 'Unopened'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-center">
+                                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                    guest.rsvp_status === 'attending'
+                                      ? 'bg-gold-50 dark:bg-gold-950/30 text-gold-700 dark:text-gold-400 border border-gold-100 dark:border-gold-900/20 font-bold'
+                                      : guest.rsvp_status === 'declined'
+                                      ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/20'
+                                      : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/20'
+                                  }`}>
+                                    {guest.rsvp_status === 'attending'
+                                      ? `Attending (${guest.rsvp_guests_count})`
+                                      : guest.rsvp_status === 'declined'
+                                      ? 'Declined'
+                                      : 'Pending'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                                  <button
+                                    onClick={() => handleCopyLink(guest)}
+                                    title="Copy Invite Link"
+                                    className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-gold-600 dark:hover:text-gold-400 hover:border-gold-300 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  >
+                                    {copiedId === guest.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={() => handleSendWhatsApp(guest)}
+                                    title="Send WhatsApp Invitation"
+                                    className="p-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-600 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-100/50 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingGuestId(guest.id);
+                                      setNewGuest({
+                                        guest_name: guest.guest_name,
+                                        whatsapp_number: guest.whatsapp_number,
+                                        invitation_type: guest.invitation_type,
+                                      });
+                                    }}
+                                    title="Edit Guest"
+                                    className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-blue-600 hover:border-blue-300 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteGuest(guest.id)}
+                                    title="Delete Guest"
+                                    className="p-1.5 rounded-lg border border-red-200 dark:border-red-950 bg-white dark:bg-zinc-900 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Bulk Import Modal */}
+              {showBulkModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex justify-center items-center z-50 p-4">
+                  <div className="bg-white dark:bg-zinc-900 max-w-2xl w-full rounded-3xl p-6 border border-gold-200/20 dark:border-zinc-800 shadow-2xl flex flex-col space-y-4">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800">
+                      <div>
+                        <h3 className="font-serif font-bold text-lg text-zinc-800 dark:text-zinc-100">Bulk Import Guest List</h3>
+                        <p className="text-xs text-gray-400">Add multiple invitations using copy-paste CSV/TSV format</p>
+                      </div>
+                      <button
+                        onClick={() => setShowBulkModal(false)}
+                        className="text-gray-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-bold p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 bg-gold-50/50 dark:bg-zinc-800/40 p-4 rounded-xl border border-gold-200/20 dark:border-zinc-800 space-y-1.5">
+                      <p className="font-semibold text-gold-700 dark:text-gold-400 uppercase tracking-widest text-[9px] mb-1">Instruction Format</p>
+                      <p>1. Paste raw data with one guest entry per line.</p>
+                      <p>2. Column format: <code className="font-mono bg-white dark:bg-zinc-800 px-1 border border-zinc-200 dark:border-zinc-700 rounded text-gold-600 font-bold">Name, WhatsAppNumber, Type</code></p>
+                      <p>3. Accepted types: <code className="font-mono text-zinc-600 dark:text-zinc-300">individual</code>, <code className="font-mono text-zinc-600 dark:text-zinc-300 font-semibold">spouse</code>, <code className="font-mono text-zinc-600 dark:text-zinc-300">family</code> (defaults to individual).</p>
+                      <p className="pt-2 font-mono text-[10px] text-zinc-400 dark:text-zinc-500">Example:<br />Mr. John Smith, +94771234567, individual<br />Mr. & Mrs. Silva, +94765432109, spouse<br />The Perera Family, +94711122233, family</p>
+                    </div>
+
+                    <textarea
+                      placeholder="Paste your lines here..."
+                      className={`${inputClass} font-mono text-xs flex-1`}
+                      rows={8}
+                      value={bulkInput}
+                      onChange={(e) => setBulkInput(e.target.value)}
+                    />
+
+                    <div className="flex justify-end gap-2.5 pt-2">
+                      <button
+                        onClick={() => setShowBulkModal(false)}
+                        className="py-2 px-4 rounded-xl border border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 text-xs font-bold tracking-widest uppercase hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleBulkImport}
+                        disabled={saveLoading || !bulkInput.trim()}
+                        className="py-2 px-5 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-xs font-bold tracking-widest uppercase cursor-pointer disabled:opacity-50 transition-colors"
+                      >
+                        {saveLoading ? 'Importing...' : 'Start Import'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </section>
       </main>

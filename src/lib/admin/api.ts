@@ -1,5 +1,5 @@
 import { createSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabaseClient';
-import type { StorageBucket } from '@/lib/types';
+import type { StorageBucket, Guest, GuestAnalytics } from '@/lib/types';
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   if (!isSupabaseConfigured) return {};
@@ -92,4 +92,28 @@ export const adminApi = {
       body: formData,
     });
   },
+
+  getGuests: () => adminFetch<Guest[]>('/api/guests'),
+  createGuest: (body: { guest_name: string; whatsapp_number: string; invitation_type: string }) =>
+    adminFetch<Guest>('/api/guests', { method: 'POST', body: JSON.stringify(body) }),
+  updateGuest: (id: string, body: { guest_name: string; whatsapp_number: string; invitation_type: string }) =>
+    adminFetch<Guest>(`/api/guests/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteGuest: (id: string) => adminFetch<{ success: boolean }>(`/api/guests/${id}`, { method: 'DELETE' }),
+  importBulkGuests: (body: { guest_name: string; whatsapp_number: string; invitation_type: string }[]) =>
+    adminFetch<{ message: string; insertedCount: number; skippedCount: { duplicateInDb: number; duplicateInPayload: number; invalid: number } }>('/api/guests/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getGuestAnalytics: () => adminFetch<GuestAnalytics>('/api/guests/analytics'),
+  submitRsvp: (body: { token: string; status: 'attending' | 'declined'; guestsCount: number; message?: string }) =>
+    fetch('/api/rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit RSVP');
+      return data;
+    }),
 };
+
