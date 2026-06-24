@@ -43,7 +43,7 @@ export default function Program({ items }: ProgramProps) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="relative border-l border-gold-200 ml-4 md:ml-32 pl-8 space-y-12">
+      <div className="relative border-l border-gold-400/20 ml-4 md:ml-32 pl-8 space-y-12">
         {sortedItems.map((item, idx) => (
           <motion.div
             key={item.id}
@@ -55,31 +55,31 @@ export default function Program({ items }: ProgramProps) {
           >
             {/* Absolute positioning of the time block on larger screens */}
             <div className="md:absolute md:top-0 md:-left-44 md:w-32 md:text-right hidden md:block">
-              <div className="text-lg font-serif font-bold text-gold-600 tracking-wider">
+              <div className="text-lg font-serif font-bold text-gold-400 tracking-wider">
                 {item.event_time}
               </div>
-              <div className="text-[10px] font-sans text-gray-400 uppercase tracking-widest mt-1">
+              <div className="text-[10px] font-sans text-gold-200/50 uppercase tracking-widest mt-1">
                 Scheduled
               </div>
             </div>
 
             {/* Program Node Icon */}
-            <div className="absolute -left-13 top-0.5 w-10 h-10 rounded-full bg-white border-2 border-gold-400 flex items-center justify-center text-gold-500 shadow-md z-10">
+            <div className="absolute -left-13 top-0.5 w-10 h-10 rounded-full bg-[#0B0B0B] border border-gold-400/40 flex items-center justify-center text-gold-400 shadow-[0_0_15px_rgba(212,175,55,0.15)] z-10">
               {getIcon(item.title, idx)}
             </div>
 
             {/* Time label on Mobile */}
-            <div className="inline-block px-3 py-0.5 bg-gold-100 text-gold-700 rounded-full font-serif text-sm font-semibold tracking-wider mb-2 md:hidden">
+            <div className="inline-block px-3 py-0.5 bg-gold-950/40 border border-gold-400/20 text-gold-400 rounded-full font-serif text-sm font-semibold tracking-wider mb-2 md:hidden">
               {item.event_time}
             </div>
 
             {/* Card Content */}
-            <div className="glass-card p-6 rounded-2xl border border-white/60 hover:border-gold-200/40 hover:shadow-md transition-all duration-300">
-              <h4 className="text-lg font-serif font-bold text-[#2D2D2D] mb-1">
+            <div className="glass-card p-6 rounded-2xl border border-gold-400/20 hover:border-gold-400/50 hover:shadow-md transition-all duration-300">
+              <h4 className="text-lg font-serif font-bold text-white mb-1">
                 {item.title}
               </h4>
               {item.description && (
-                <p className="text-sm font-sans leading-relaxed text-[#5A5A5A]">
+                <p className="text-sm font-sans leading-relaxed text-gold-100/70">
                   {item.description}
                 </p>
               )}

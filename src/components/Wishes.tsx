@@ -93,22 +93,22 @@ export default function Wishes({ initialWishes }: WishesProps) {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass-card p-6 sm:p-8 rounded-3xl border border-white/60 shadow-xl relative overflow-hidden"
+            className="glass-card p-6 sm:p-8 rounded-3xl border border-gold-400/20 shadow-xl relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-gold-300 via-gold-500 to-gold-300" />
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-gold-300 via-gold-400 to-gold-300" />
             
-            <h3 className="text-2xl font-serif font-bold text-[#2D2D2D] mb-6 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-rose-gold-500 fill-rose-gold-400" />
+            <h3 className="text-2xl font-serif font-bold text-white mb-6 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-gold-400 fill-gold-400/10" />
               Send Your Blessings
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-sans font-semibold tracking-wider text-[#5A5A5A] uppercase mb-2" htmlFor="guest-name">
+                <label className="block text-xs font-sans font-semibold tracking-wider text-gold-200/70 uppercase mb-2" htmlFor="guest-name">
                   Your Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-gold-500" />
+                  <User className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-gold-400" />
                   <input
                     id="guest-name"
                     type="text"
@@ -116,17 +116,17 @@ export default function Wishes({ initialWishes }: WishesProps) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter your name"
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 transition-all font-sans text-sm"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-400/20 bg-black/60 text-white focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-gold-400/50 transition-all font-sans text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-sans font-semibold tracking-wider text-[#5A5A5A] uppercase mb-2" htmlFor="guest-message">
+                <label className="block text-xs font-sans font-semibold tracking-wider text-gold-200/70 uppercase mb-2" htmlFor="guest-message">
                   Blessing Message
                 </label>
                 <div className="relative">
-                  <MessageSquare className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-gold-500" />
+                  <MessageSquare className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-gold-400" />
                   <textarea
                     id="guest-message"
                     required
@@ -134,7 +134,7 @@ export default function Wishes({ initialWishes }: WishesProps) {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Write your wishes for the happy couple..."
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 transition-all font-sans text-sm resize-none"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-400/20 bg-black/60 text-white focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-gold-400/50 transition-all font-sans text-sm resize-none"
                   />
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function Wishes({ initialWishes }: WishesProps) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-white font-serif font-semibold tracking-wide hover:from-gold-600 hover:to-gold-700 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold-500/50 cursor-pointer disabled:opacity-50 transition-all"
+                className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 text-black font-serif font-bold tracking-widest uppercase hover:from-gold-500 hover:to-gold-650 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold-400/50 cursor-pointer disabled:opacity-50 transition-all"
               >
                 {isSubmitting ? 'Sending...' : 'Send Wishes'}
                 <Send className="w-4 h-4" />
@@ -155,7 +155,7 @@ export default function Wishes({ initialWishes }: WishesProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-4 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-center text-xs font-sans"
+                  className="mt-4 p-3 rounded-xl bg-green-950/20 border border-green-800/40 text-green-400 text-center text-xs font-sans"
                 >
                   Thank you! Your blessing has been added to the wishes wall.
                 </motion.div>
@@ -165,7 +165,7 @@ export default function Wishes({ initialWishes }: WishesProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-center text-xs font-sans"
+                  className="mt-4 p-3 rounded-xl bg-red-950/20 border border-red-800/40 text-red-400 text-center text-xs font-sans"
                 >
                   Something went wrong. Please try again.
                 </motion.div>
@@ -176,10 +176,10 @@ export default function Wishes({ initialWishes }: WishesProps) {
 
         {/* Wishes Display Wall (Right Columns) */}
         <div className="lg:col-span-7">
-          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4 rounded-2xl">
+          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4 rounded-2xl scrollbar-thin">
             <AnimatePresence initial={false}>
               {wishes.length === 0 ? (
-                <div className="text-center py-12 bg-white/40 rounded-2xl border border-dashed border-gold-200/50 font-serif italic text-gray-500">
+                <div className="text-center py-12 bg-black/40 rounded-2xl border border-dashed border-gold-400/20 font-serif italic text-gold-200/40">
                   Be the first to write a blessing!
                 </div>
               ) : (
@@ -190,17 +190,17 @@ export default function Wishes({ initialWishes }: WishesProps) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                     layout
-                    className="glass-card p-5 rounded-2xl border border-white/60 relative hover:border-gold-200/30 transition-all duration-300 shadow-sm"
+                    className="glass-card p-5 rounded-2xl border border-gold-400/20 relative hover:border-gold-400/40 transition-all duration-300 shadow-sm"
                   >
                     <div className="flex justify-between items-start gap-4 mb-2">
-                      <h4 className="font-serif font-bold text-gold-700 tracking-wide text-sm">
+                      <h4 className="font-serif font-bold text-gold-400 tracking-wide text-sm">
                         {wish.name}
                       </h4>
-                      <span className="text-[10px] font-sans text-gray-400">
+                      <span className="text-[10px] font-sans text-gold-200/50">
                         {formatDate(wish.created_at)}
                       </span>
                     </div>
-                    <p className="text-sm font-sans text-[#5A5A5A] leading-relaxed italic">
+                    <p className="text-sm font-sans text-gold-100/80 leading-relaxed italic">
                       &ldquo;{wish.message}&rdquo;
                     </p>
                   </motion.div>

@@ -83,8 +83,8 @@ export default function AdminDashboard() {
       setWeddingInfo(
         (info as WeddingInfoRow) ?? {
           id: '',
-          bride_name: 'Sophia',
-          groom_name: 'Liam',
+          bride_name: 'Ruwan',
+          groom_name: 'Githmie',
           wedding_date: '2026-09-20',
           wedding_time: '16:00',
           venue_name: '',

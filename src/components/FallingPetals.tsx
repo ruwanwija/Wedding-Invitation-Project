@@ -2,15 +2,14 @@
 
 import React, { useEffect, useRef } from 'react';
 
-interface Petal {
+interface GoldParticle {
   x: number;
   y: number;
   size: number;
   speedY: number;
   speedX: number;
-  rotation: number;
-  rotationSpeed: number;
   opacity: number;
+  fadeSpeed: number;
   color: string;
 }
 
@@ -25,16 +24,15 @@ export default function FallingPetals() {
     if (!ctx) return;
 
     let animationFrameId: number;
-    let petals: Petal[] = [];
-    const maxPetals = 40;
+    let particles: GoldParticle[] = [];
+    const maxParticles = 60; // Slightly more for high density cinematic look
 
-    // Soft shades of rose gold, pink, and cream for petals
-    const petalColors = [
-      'rgba(244, 232, 232, 0.75)', // Rose Gold light
-      'rgba(234, 208, 211, 0.7)',  // Soft Rose Gold
-      'rgba(220, 177, 183, 0.65)', // Deeper Rose
-      'rgba(243, 236, 216, 0.7)',  // Pale Gold Cream
-      'rgba(255, 255, 255, 0.8)',  // White
+    // Luxury gold palette
+    const colors = [
+      'rgba(212, 175, 55, 0.8)',   // Luxury Gold
+      'rgba(246, 236, 223, 0.75)',  // Soft Cream Gold
+      'rgba(222, 181, 134, 0.7)',   // Warm Bronze Gold
+      'rgba(255, 255, 255, 0.85)',  // Sparkling Diamond White
     ];
 
     const resizeCanvas = () => {
@@ -45,48 +43,46 @@ export default function FallingPetals() {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    const createPetal = (isInitial = false): Petal => {
-      const size = Math.random() * 8 + 6;
+    const createParticle = (isInitial = false): GoldParticle => {
+      const size = Math.random() * 3.5 + 1.2; // smaller, elegant dust specks
       return {
         x: Math.random() * canvas.width,
-        y: isInitial ? Math.random() * canvas.height : -20,
+        y: isInitial ? Math.random() * canvas.height : canvas.height + 20, // drift upwards
         size,
-        speedY: Math.random() * 1.2 + 0.6,
-        speedX: Math.random() * 1.5 - 0.75,
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() * 2 - 1) * 0.5,
-        opacity: Math.random() * 0.6 + 0.3,
-        color: petalColors[Math.floor(Math.random() * petalColors.length)],
+        speedY: -(Math.random() * 0.8 + 0.3), // slow upward drift
+        speedX: Math.random() * 0.6 - 0.3,   // slight drift side to side
+        opacity: Math.random() * 0.5 + 0.2,
+        fadeSpeed: Math.random() * 0.005 + 0.002,
+        color: colors[Math.floor(Math.random() * colors.length)],
       };
     };
 
-    // Initialize petals
-    for (let i = 0; i < maxPetals; i++) {
-      petals.push(createPetal(true));
+    // Initialize particles
+    for (let i = 0; i < maxParticles; i++) {
+      particles.push(createParticle(true));
     }
 
-    const drawPetal = (ctx: CanvasRenderingContext2D, petal: Petal) => {
+    const drawParticle = (ctx: CanvasRenderingContext2D, p: GoldParticle) => {
       ctx.save();
-      ctx.translate(petal.x, petal.y);
-      ctx.rotate((petal.rotation * Math.PI) / 180);
-      ctx.globalAlpha = petal.opacity;
+      ctx.globalAlpha = p.opacity;
       
-      // Draw organic curved petal shape (cherry blossom style)
-      ctx.fillStyle = petal.color;
+      // Create radial glow for each gold speck
+      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+      gradient.addColorStop(0, p.color);
+      gradient.addColorStop(0.3, p.color);
+      gradient.addColorStop(1, 'transparent');
+      
+      ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.quadraticCurveTo(-petal.size / 2, -petal.size / 2, -petal.size / 4, -petal.size);
-      ctx.quadraticCurveTo(0, -petal.size * 1.2, petal.size / 4, -petal.size);
-      ctx.quadraticCurveTo(petal.size / 2, -petal.size / 2, 0, 0);
+      ctx.arc(p.x, p.y, p.size * 2.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Add a subtle middle crease line to the petal
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 1;
+      // Core sparkle
+      ctx.fillStyle = '#FFFFFF';
+      ctx.globalAlpha = p.opacity * 0.8;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0, -petal.size * 0.9);
-      ctx.stroke();
+      ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+      ctx.fill();
 
       ctx.restore();
     };
@@ -94,20 +90,19 @@ export default function FallingPetals() {
     const update = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = 0; i < petals.length; i++) {
-        const petal = petals[i];
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         
-        // Move petal
-        petal.y += petal.speedY;
-        petal.x += petal.speedX + Math.sin(petal.y / 30) * 0.4; // sway back and forth
-        petal.rotation += petal.rotationSpeed;
+        // Move particle upward
+        p.y += p.speedY;
+        p.x += p.speedX + Math.sin(p.y / 40) * 0.15; // smooth sway
 
-        // Reset if offscreen
-        if (petal.y > canvas.height + 20 || petal.x < -20 || petal.x > canvas.width + 20) {
-          petals[i] = createPetal(false);
+        // Reset if offscreen (at the top)
+        if (p.y < -20 || p.x < -20 || p.x > canvas.width + 20) {
+          particles[i] = createParticle(false);
         }
 
-        drawPetal(ctx, petal);
+        drawParticle(ctx, p);
       }
 
       animationFrameId = requestAnimationFrame(update);

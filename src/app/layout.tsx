@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Montserrat, Cinzel } from "next/font/google";
+import { Playfair_Display, Inter, Cinzel, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -8,15 +8,23 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-const montserrat = Montserrat({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-montserrat",
+  variable: "--font-inter",
   display: "swap",
 });
 
 const cinzel = Cinzel({
   subsets: ["latin"],
   variable: "--font-cinzel",
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
   display: "swap",
 });
 
@@ -27,9 +35,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Liam & Sophia's Wedding Invitation",
+  title: "Githmie & Ruwan's Wedding Invitation",
   description: "Together with our families, we warmly invite you to celebrate our wedding and share in our happiness on September 20, 2026.",
-  authors: [{ name: "Liam & Sophia" }],
+  authors: [{ name: "Githmie & Ruwan" }],
 };
 
 export default function RootLayout({
@@ -40,9 +48,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${montserrat.variable} ${cinzel.variable} scroll-smooth h-full antialiased`}
+      className={`${playfair.variable} ${inter.variable} ${cinzel.variable} ${cormorant.variable} scroll-smooth h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#FAF6F0] text-[#2A2A2A]">
+      <body className="min-h-full flex flex-col bg-[#0B0B0B] text-white">
         {children}
       </body>
     </html>

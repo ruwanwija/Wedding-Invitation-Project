@@ -105,7 +105,7 @@ export default function RegisterPage() {
                 id="reg-name"
                 type="text"
                 {...register('name')}
-                placeholder="Sophia Bennett"
+                placeholder="Ruwan Bennett"
                 className="w-full pl-11 pr-4 py-3 rounded-xl border border-gold-200/50 bg-white/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 transition-all font-sans text-sm"
               />
             </div>

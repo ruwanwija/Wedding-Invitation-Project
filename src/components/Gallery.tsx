@@ -48,7 +48,7 @@ export default function Gallery({ images }: GalleryProps) {
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.5, delay: idx * 0.05 }}
             onClick={() => setSelectedIdx(idx)}
-            className="group relative aspect-[4/3] sm:aspect-square overflow-hidden rounded-3xl cursor-pointer border border-gold-200/20 shadow-md hover:shadow-xl transition-all duration-300 bg-gold-50"
+            className="group relative aspect-[4/3] sm:aspect-square overflow-hidden rounded-3xl cursor-pointer border border-gold-400/20 shadow-md hover:shadow-xl hover:border-gold-400/50 transition-all duration-300 bg-[#111111]"
           >
             {/* The Image */}
             <Image
@@ -56,15 +56,15 @@ export default function Gallery({ images }: GalleryProps) {
               alt={img.caption || "Wedding Gallery"}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 384px"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              className="object-cover transition-transform duration-700 group-hover:scale-105 group-hover:brightness-95"
               unoptimized
             />
 
             {/* Hover overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-              <Maximize2 className="absolute top-4 right-4 text-white/80 w-5 h-5" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+              <Maximize2 className="absolute top-4 right-4 text-gold-400 w-5 h-5" />
               {img.caption && (
-                <p className="text-white text-sm font-serif tracking-wider font-medium translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                <p className="text-gold-200 text-sm font-serif tracking-wider font-medium translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                   {img.caption}
                 </p>
               )}
@@ -73,7 +73,7 @@ export default function Gallery({ images }: GalleryProps) {
         ))}
       </div>
 
-      {/* Lightbox Light Modal */}
+      {/* Lightbox Modal */}
       <AnimatePresence>
         {selectedIdx !== null && (
           <motion.div
@@ -86,7 +86,7 @@ export default function Gallery({ images }: GalleryProps) {
             {/* Close button */}
             <button
               onClick={() => setSelectedIdx(null)}
-              className="absolute top-6 right-6 text-white/80 hover:text-white cursor-pointer bg-white/10 p-2 rounded-full backdrop-blur-sm z-55 transition-colors"
+              className="absolute top-6 right-6 text-gold-400 hover:text-white cursor-pointer bg-black/40 border border-gold-400/20 p-2 rounded-full backdrop-blur-sm z-55 transition-colors"
               aria-label="Close Lightbox"
             >
               <X className="w-6 h-6" />
@@ -98,7 +98,7 @@ export default function Gallery({ images }: GalleryProps) {
                 e.stopPropagation();
                 handlePrev();
               }}
-              className="absolute left-4 md:left-8 text-white/80 hover:text-white cursor-pointer bg-white/10 p-3 rounded-full backdrop-blur-sm z-55 transition-colors"
+              className="absolute left-4 md:left-8 text-gold-400 hover:text-white cursor-pointer bg-black/40 border border-gold-400/20 p-3 rounded-full backdrop-blur-sm z-55 transition-colors"
               aria-label="Previous Image"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -115,7 +115,7 @@ export default function Gallery({ images }: GalleryProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl"
+                className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-gold-400/20"
               >
                 <Image
                   src={images[selectedIdx].image_url}
@@ -134,7 +134,7 @@ export default function Gallery({ images }: GalleryProps) {
                   key={`cap-${selectedIdx}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-white/90 text-center font-serif text-base tracking-widest mt-6 bg-black/40 px-6 py-2 rounded-full border border-white/10"
+                  className="text-gold-200 text-center font-serif text-sm tracking-widest mt-6 bg-black/70 px-6 py-2 rounded-full border border-gold-400/20"
                 >
                   {images[selectedIdx].caption}
                 </motion.p>
@@ -147,7 +147,7 @@ export default function Gallery({ images }: GalleryProps) {
                 e.stopPropagation();
                 handleNext();
               }}
-              className="absolute right-4 md:right-8 text-white/80 hover:text-white cursor-pointer bg-white/10 p-3 rounded-full backdrop-blur-sm z-55 transition-colors"
+              className="absolute right-4 md:right-8 text-gold-400 hover:text-white cursor-pointer bg-black/40 border border-gold-400/20 p-3 rounded-full backdrop-blur-sm z-55 transition-colors"
               aria-label="Next Image"
             >
               <ChevronRight className="w-6 h-6" />
