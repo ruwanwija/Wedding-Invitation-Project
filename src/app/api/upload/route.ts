@@ -25,10 +25,12 @@ export async function POST(request: NextRequest) {
   const replacePath = formData.get('replacePath') as string | null;
 
   if (!(file instanceof File)) {
+    console.warn("Upload failed validation: Not a File instance", { file });
     return jsonError('A file is required.');
   }
 
   if (!STORAGE_BUCKETS.includes(bucket as StorageBucket)) {
+    console.warn("Upload failed validation: Invalid bucket name", { bucket });
     return jsonError('Invalid storage bucket.');
   }
 
@@ -50,10 +52,12 @@ export async function POST(request: NextRequest) {
   }
 
   if (!allowedMimes.includes(fileMimeType)) {
+    console.warn("Upload failed validation: Disallowed MIME type", { fileMimeType, fileType: file.type, fileName: file.name, bucket });
     return jsonError(`File type ${fileMimeType || '(unknown)'} is not allowed for bucket ${bucket}.`);
   }
 
   if (file.size > MAX_FILE_SIZE) {
+    console.warn("Upload failed validation: File too large", { size: file.size, limit: MAX_FILE_SIZE });
     return jsonError('File exceeds the 10 MB size limit.');
   }
 
