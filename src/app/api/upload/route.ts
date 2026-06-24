@@ -5,11 +5,11 @@ import { ensureAdminClient, STORAGE_BUCKETS, type StorageBucket } from '@/lib/ap
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const MIME_BY_BUCKET: Record<StorageBucket, string[]> = {
-  'bride-groom-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-  'gallery-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-  'timeline-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-  'music-tracks': ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'],
-  'qr-codes': ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
+  'bride-groom-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/pjpeg', 'image/x-png', 'image/jfif'],
+  'gallery-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/pjpeg', 'image/x-png', 'image/jfif'],
+  'timeline-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/pjpeg', 'image/x-png', 'image/jfif'],
+  'music-tracks': ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/x-wav'],
+  'qr-codes': ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/pjpeg', 'image/x-png'],
 };
 
 export async function POST(request: NextRequest) {
@@ -35,8 +35,22 @@ export async function POST(request: NextRequest) {
   const typedBucket = bucket as StorageBucket;
   const allowedMimes = MIME_BY_BUCKET[typedBucket];
 
-  if (!allowedMimes.includes(file.type)) {
-    return jsonError(`File type ${file.type} is not allowed for bucket ${bucket}.`);
+  // Resolve dynamic mime type if browser-submitted mime is generic or empty
+  let fileMimeType = file.type;
+  if (!fileMimeType || fileMimeType === 'application/octet-stream') {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'png') fileMimeType = 'image/png';
+    else if (ext === 'jpg' || ext === 'jpeg' || ext === 'jfif') fileMimeType = 'image/jpeg';
+    else if (ext === 'webp') fileMimeType = 'image/webp';
+    else if (ext === 'gif') fileMimeType = 'image/gif';
+    else if (ext === 'mp3') fileMimeType = 'audio/mp3';
+    else if (ext === 'wav') fileMimeType = 'audio/wav';
+    else if (ext === 'ogg') fileMimeType = 'audio/ogg';
+    else if (ext === 'svg') fileMimeType = 'image/svg+xml';
+  }
+
+  if (!allowedMimes.includes(fileMimeType)) {
+    return jsonError(`File type ${fileMimeType || '(unknown)'} is not allowed for bucket ${bucket}.`);
   }
 
   if (file.size > MAX_FILE_SIZE) {
@@ -56,7 +70,7 @@ export async function POST(request: NextRequest) {
   const { error: uploadError } = await client.storage
     .from(typedBucket)
     .upload(filePath, buffer, {
-      contentType: file.type,
+      contentType: fileMimeType || file.type,
       upsert: !!replacePath,
     });
 
