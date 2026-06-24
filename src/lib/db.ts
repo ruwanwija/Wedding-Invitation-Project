@@ -45,6 +45,8 @@ const DEFAULT_SETTINGS: WeddingSettings = {
   giftQrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=wedding-gift',
   giftEnabled: true,
   musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  bridePhotoUrl: 'https://images.unsplash.com/photo-1519225495810-7512c696505a?w=800&auto=format&fit=crop&q=80',
+  groomPhotoUrl: 'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=800&auto=format&fit=crop&q=80',
 };
 
 const DEFAULT_TIMELINE: TimelineEvent[] = [
@@ -129,6 +131,8 @@ function assembleSettings(
     giftQrCodeUrl: gift?.qr_code_url ?? DEFAULT_SETTINGS.giftQrCodeUrl,
     giftEnabled: gift?.is_enabled ?? DEFAULT_SETTINGS.giftEnabled,
     musicUrl: music?.is_enabled !== false ? (music?.track_url ?? DEFAULT_SETTINGS.musicUrl) : '',
+    bridePhotoUrl: bride?.photo_url ?? DEFAULT_SETTINGS.bridePhotoUrl,
+    groomPhotoUrl: groom?.photo_url ?? DEFAULT_SETTINGS.groomPhotoUrl,
   };
 }
 

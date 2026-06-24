@@ -23,6 +23,8 @@ export interface WeddingSettings {
   giftQrCodeUrl: string;
   giftEnabled: boolean;
   musicUrl: string;
+  bridePhotoUrl: string | null;
+  groomPhotoUrl: string | null;
 }
 
 export interface TimelineEvent {

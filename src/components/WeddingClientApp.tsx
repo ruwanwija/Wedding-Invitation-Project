@@ -244,7 +244,7 @@ export default function WeddingClientApp({
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-950 p-3">
               <div className="relative w-full h-full rounded-2xl overflow-hidden border border-gold-400/30">
                 <Image
-                  src="https://images.unsplash.com/photo-1519225495810-7512c696505a?w=800&auto=format&fit=crop&q=80"
+                  src={settings.bridePhotoUrl || "https://images.unsplash.com/photo-1519225495810-7512c696505a?w=800&auto=format&fit=crop&q=80"}
                   alt={settings.brideFullName}
                   fill
                   sizes="(max-width: 768px) 100vw, 500px"
@@ -294,7 +294,7 @@ export default function WeddingClientApp({
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-950 p-3">
               <div className="relative w-full h-full rounded-2xl overflow-hidden border border-gold-400/30">
                 <Image
-                  src="https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=800&auto=format&fit=crop&q=80"
+                  src={settings.groomPhotoUrl || "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=800&auto=format&fit=crop&q=80"}
                   alt={settings.groomFullName}
                   fill
                   sizes="(max-width: 768px) 100vw, 500px"
